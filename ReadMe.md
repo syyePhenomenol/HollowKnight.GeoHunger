@@ -8,7 +8,7 @@ The player depletion/starving effects do not apply when:
 - Recoiling from other damage
 - Performing Shade Cloak Dash
 - Performing Dive
-- Invulnerable
+- Invulnerable otherwise
 - Unable to control the Knight otherwise
 
 You can adjust the difficulty under Settings -> Mods in-game.
