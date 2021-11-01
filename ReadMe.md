@@ -12,3 +12,11 @@ The player depletion/starving effects do not apply when:
 - Unable to control the Knight otherwise
 
 You can adjust the difficulty under Settings -> Mods in-game.
+
+# How To Install
+Use Scarab: https://github.com/fifty-six/Scarab
+
+Or, you can install manually:
+1. Make sure you have Hollow Knight version 1.5.x, along with the latest version of Modding API.
+2. Download the latest release of `GeoHunger.zip`.
+3. Unzip and copy the folder 'GeoHunger' to `...\Steam\steamapps\common\Hollow Knight\hollow_knight_Data\Managed\Mods`.
