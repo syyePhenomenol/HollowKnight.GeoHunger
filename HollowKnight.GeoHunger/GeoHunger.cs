@@ -8,7 +8,7 @@ using UObject = UnityEngine.Object;
 
 namespace GeoHunger
 {
-    public class GeoHunger : Mod, IGlobalSettings<GlobalSettings>
+    public class GeoHunger : Mod, IGlobalSettings<GlobalSettings>, IMenuMod
     {
         internal static GeoHunger Instance;
 
@@ -20,6 +20,8 @@ namespace GeoHunger
 
         public static GlobalSettings GS { get; set; } = new GlobalSettings();
 
+        public bool ToggleButtonInsideMenu => false;
+
         public void OnLoadGlobal(GlobalSettings s) => GS = s;
 
         public GlobalSettings OnSaveGlobal() => GS;
@@ -28,6 +30,50 @@ namespace GeoHunger
         internal static Coroutine starvePlayer = null;
         internal static bool depleteGeoRunning = false;
         internal static bool starvePlayerRunning = false;
+
+        public List<IMenuMod.MenuEntry> GetMenuData(IMenuMod.MenuEntry? toggleButtonEntry)
+        {
+            return new List<IMenuMod.MenuEntry>
+            {
+                new IMenuMod.MenuEntry {
+                    Name = "Geo rate",
+                    Description = "How quickly you lose geo.",
+                    Values = new string[] {
+                        "1 geo per 0.5 seconds",
+                        "1 geo per 1.0 second",
+                        "1 geo per 1.5 seconds",
+                        "1 geo per 2.0 seconds",
+                        "1 geo per 2.5 seconds",
+                        "1 geo per 3.0 seconds",
+                        "1 geo per 3.5 seconds",
+                        "1 geo per 4.0 seconds",
+                        "1 geo per 4.5 seconds",
+                        "1 geo per 5.0 seconds",
+                    },
+                    // opt will be the index of the option that has been chosen
+                    Saver = opt => GS.GeoDepleteOption = opt,
+                    Loader = () => GS.GeoDepleteOption
+                },
+                new IMenuMod.MenuEntry {
+                    Name = "Starve rate",
+                    Description = "How quickly you lose health at 0 geo.",
+                    Values = new string[] {
+                        "1 mask per 1 second",
+                        "1 mask per 2 seconds",
+                        "1 mask per 3 seconds",
+                        "1 mask per 4 seconds",
+                        "1 mask per 5 seconds",
+                        "1 mask per 6 seconds",
+                        "1 mask per 7 seconds",
+                        "1 mask per 8 seconds",
+                        "1 mask per 9 seconds",
+                        "1 mask per 10 seconds",
+                    },
+                    Saver = opt => GS.StarveOption = opt,
+                    Loader = () => GS.StarveOption
+                }
+            };
+        }
 
         public override void Initialize(Dictionary<string, Dictionary<string, GameObject>> preloadedObjects)
         {
@@ -103,7 +149,7 @@ namespace GeoHunger
                 {
                     StopStarving();
 
-                    yield return new WaitForSeconds(GS.GeoDepleteTimeSeconds);
+                    yield return new WaitForSeconds((GS.GeoDepleteOption + 1) * 0.5f);
 
                     if (CanTakeDamage())
                     {
@@ -176,7 +222,7 @@ namespace GeoHunger
                     continue;
                 }
 
-                yield return new WaitForSeconds(GS.TakeDamageTimeSeconds);
+                yield return new WaitForSeconds(GS.StarveOption + 1);
 
                 HeroController.instance.TakeDamage(null, GlobalEnums.CollisionSide.other, 1, 1);
             }
@@ -185,7 +231,7 @@ namespace GeoHunger
 
     public class GlobalSettings
     {
-        public float GeoDepleteTimeSeconds = 1.5f;
-        public float TakeDamageTimeSeconds = 5.0f;
+        public int GeoDepleteOption = 2;
+        public int StarveOption = 4;
     }
 }
