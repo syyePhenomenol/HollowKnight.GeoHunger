@@ -10,4 +10,4 @@ The player depletion/starving effects do not apply when:
 - Invulnerable
 - Unable to control the Knight
 
-You can adjust the difficulty by changing the time delay between every depletion/damage taken in the Global Settings file.
+You can adjust the difficulty under Settings -> Mods in-game.
