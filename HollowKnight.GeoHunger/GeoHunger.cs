@@ -12,7 +12,7 @@ namespace GeoHunger
     {
         internal static GeoHunger Instance;
 
-        private readonly string _version = "1.0.0";
+        private readonly string _version = "1.1.0";
 
         public override string GetVersion() => _version;
 
