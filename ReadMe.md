@@ -4,10 +4,19 @@ GeoHunger is a Hollow Knight mod that slowly depletes the player's Geo over time
 
 The player depletion/starving effects do not apply when:
 - Talking with NPCs
+- Resting at/near a bench
 - Recoiling from other damage
 - Performing Shade Cloak Dash
 - Performing Dive
-- Invulnerable
-- Unable to control the Knight
+- Invulnerable otherwise
+- Unable to control the Knight otherwise
 
-You can adjust the difficulty by changing the time delay between every depletion/damage taken in the Global Settings file.
+You can adjust the difficulty under Settings -> Mods in-game.
+
+# How To Install
+Use Scarab: https://github.com/fifty-six/Scarab
+
+Or, you can install manually:
+1. Make sure you have Hollow Knight version 1.5.x, along with the latest version of Modding API.
+2. Download the latest release of `GeoHunger.zip`.
+3. Unzip and copy the folder 'GeoHunger' to `...\Steam\steamapps\common\Hollow Knight\hollow_knight_Data\Managed\Mods`.
