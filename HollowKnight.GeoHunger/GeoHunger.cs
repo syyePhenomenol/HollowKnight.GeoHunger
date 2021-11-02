@@ -8,11 +8,11 @@ using UObject = UnityEngine.Object;
 
 namespace GeoHunger
 {
-    public class GeoHunger : Mod, IGlobalSettings<GlobalSettings>, IMenuMod
+    public class GeoHunger : Mod, IGlobalSettings<GlobalSettings>, IMenuMod, ITogglableMod
     {
         internal static GeoHunger Instance;
 
-        private readonly string _version = "1.1.0";
+        private readonly string _version = "1.2.0";
 
         public override string GetVersion() => _version;
 
@@ -50,7 +50,6 @@ namespace GeoHunger
                         "1 geo per 4.5 seconds",
                         "1 geo per 5.0 seconds",
                     },
-                    // opt will be the index of the option that has been chosen
                     Saver = opt => GS.GeoDepleteOption = opt,
                     Loader = () => GS.GeoDepleteOption
                 },
@@ -58,7 +57,6 @@ namespace GeoHunger
                     Name = "Starve rate",
                     Description = "How quickly you lose health at 0 geo.",
                     Values = new string[] {
-                        "1 mask per 1 second",
                         "1 mask per 2 seconds",
                         "1 mask per 3 seconds",
                         "1 mask per 4 seconds",
@@ -81,12 +79,27 @@ namespace GeoHunger
 
             Instance = this;
 
+            // If the mod is re-enabled during a game
+            if (GameManager.instance.IsGameplayScene())
+            {
+                StartDepleting();
+            }
+
             On.GameManager.StartNewGame += GameManager_StartNewGame;
             On.GameManager.LoadGame += GameManager_LoadGame;
-
-            UnityEngine.SceneManagement.SceneManager.activeSceneChanged += SceneManager_activeSceneChanged;
+            On.QuitToMenu.Start += OnQuitToMenu;
 
             Log("Initialized");
+        }
+
+        public void Unload()
+        {
+            StopDepleting();
+            StopStarving();
+
+            On.GameManager.StartNewGame -= GameManager_StartNewGame;
+            On.GameManager.LoadGame -= GameManager_LoadGame;
+            On.QuitToMenu.Start -= OnQuitToMenu;
         }
 
         public void GameManager_StartNewGame(On.GameManager.orig_StartNewGame orig, GameManager self, bool permadeathMode, bool bossRushMode)
@@ -103,20 +116,18 @@ namespace GeoHunger
             StartDepleting();
         }
 
-        public void SceneManager_activeSceneChanged(Scene from, Scene to)
+        public IEnumerator OnQuitToMenu(On.QuitToMenu.orig_Start orig, QuitToMenu self)
         {
-            Log(to.name);
+            StopDepleting();
+            StopStarving();
 
-            if (to.name == "Quit_To_Menu")
-            {
-                StopDepleting();
-                StopStarving();
-            }
+            return orig(self);
         }
 
         public void StartDepleting()
         {
-            if (!depleteGeoRunning)
+            // Don't do anything in God Seeker mode
+            if (!depleteGeoRunning && !PlayerData.instance.bossRushMode)
             {
                 depleteGeo = GameManager.instance.StartCoroutine(DepleteGeo());
                 depleteGeoRunning = true;
@@ -149,7 +160,7 @@ namespace GeoHunger
                 {
                     StopStarving();
 
-                    yield return new WaitForSeconds((GS.GeoDepleteOption + 1) * 0.5f);
+                    yield return new WaitForSecondsRealtime((GS.GeoDepleteOption + 1) * 0.5f);
 
                     if (CanTakeDamage())
                     {
@@ -163,7 +174,7 @@ namespace GeoHunger
                     yield return null;
                 }
 
-                if (PlayerData.instance.geo <= 0 && CanTakeDamage())
+                if (PlayerData.instance.geo <= 0)
                 {
                     StartStarving();
                 }
@@ -222,9 +233,12 @@ namespace GeoHunger
                     continue;
                 }
 
-                yield return new WaitForSeconds(GS.StarveOption + 1);
+                yield return new WaitForSecondsRealtime(GS.StarveOption + 2.0f);
 
-                HeroController.instance.TakeDamage(null, GlobalEnums.CollisionSide.other, 1, 1);
+                if (CanTakeDamage())
+                {
+                    HeroController.instance.TakeDamage(null, GlobalEnums.CollisionSide.other, 1, 1);
+                }
             }
         }
     }
@@ -232,6 +246,6 @@ namespace GeoHunger
     public class GlobalSettings
     {
         public int GeoDepleteOption = 2;
-        public int StarveOption = 4;
+        public int StarveOption = 3;
     }
 }
