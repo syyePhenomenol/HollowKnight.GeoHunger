@@ -160,7 +160,7 @@ namespace GeoHunger
                 {
                     StopStarving();
 
-                    yield return new WaitForSecondsRealtime((GS.GeoDepleteOption + 1) * 0.5f);
+                    yield return new WaitForSeconds((GS.GeoDepleteOption + 1) * 0.5f);
 
                     if (CanTakeDamage())
                     {
@@ -233,7 +233,7 @@ namespace GeoHunger
                     continue;
                 }
 
-                yield return new WaitForSecondsRealtime(GS.StarveOption + 2.0f);
+                yield return new WaitForSeconds(GS.StarveOption + 2.0f);
 
                 if (CanTakeDamage())
                 {
