@@ -10,6 +10,7 @@ The player depletion/starving effects do not apply when:
 - Performing Dive
 - Invulnerable otherwise
 - Unable to control the Knight otherwise
+- In God Seeker mode
 
 You can adjust the difficulty under Settings -> Mods in-game.
 
