@@ -2,17 +2,18 @@
 
 GeoHunger is a Hollow Knight mod that slowly depletes the player's Geo over time, and when it reaches 0 will "starve" the player, slowly draining the Knight of masks.
 
-The player depletion/starving effects do not apply when:
+Geo depletion/starvation do not apply when:
 - Talking with NPCs
 - Resting at/near a bench
 - Recoiling from other damage
-- Performing Shade Cloak Dash
-- Performing Dive
-- Invulnerable otherwise
 - Unable to control the Knight otherwise
 - In God Seeker mode
 
+In addition to the above, starvation also doesn't apply when invulnerable.
+
 You can adjust the difficulty under Settings -> Mods in-game.
+
+There is also a "Geo ramp" feature which linearly increases the Geo depletion rate with your current Geo.
 
 # How To Install
 Use Scarab: https://github.com/fifty-six/Scarab
