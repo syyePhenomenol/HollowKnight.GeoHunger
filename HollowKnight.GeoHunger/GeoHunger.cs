@@ -71,7 +71,8 @@ namespace GeoHunger
                                 RefreshSetting = (s, _) => s.optionList.SetOptionTo( toggleDelegates.Value.GetModEnabled() ? 0 : 1),
                                 CancelAction = _ => UIManager.instance.UIGoToDynamicMenu(modListMenu),
                                 Style = HorizontalOptionStyle.VanillaStyle
-                            });
+                            }, out var Toggle);
+                        Toggle.menuSetting.RefreshValueFromGameSettings();
                         c.AddHorizontalOption("Geo rate",
                                 new HorizontalOptionConfig
                                 {
@@ -95,8 +96,9 @@ namespace GeoHunger
                                         "2.0 geo per second",
                                     },
                                     Style = HorizontalOptionStyle.VanillaStyle
-                                })
-                            .AddHorizontalOption("Starve rate",
+                                }, out var geoRate);
+                            geoRate.menuSetting.RefreshValueFromGameSettings();
+                            c.AddHorizontalOption("Starve rate",
                                 new HorizontalOptionConfig
                                 {
                                     ApplySetting = (_, opt) => GS.StarveRate = opt,
@@ -120,8 +122,9 @@ namespace GeoHunger
                                         "1 mask per 10 seconds",
                                     },
                                     Style = HorizontalOptionStyle.VanillaStyle
-                                })
-                            .AddHorizontalOption("Geo ramp",
+                                }, out var starveRate);
+                                starveRate.menuSetting.RefreshValueFromGameSettings();
+                            c.AddHorizontalOption("Geo ramp",
                                 new HorizontalOptionConfig
                                 {
                                     ApplySetting = (_, opt) =>
@@ -145,31 +148,33 @@ namespace GeoHunger
                                         "On"
                                     },
                                     Style = HorizontalOptionStyle.VanillaStyle
-                                })
-                            .AddHorizontalOption("Ramp end",
-                                new HorizontalOptionConfig
-                                {
-                                    ApplySetting = (_, opt) => GS.GeoRampEnd = opt,
-                                    RefreshSetting = (s, _) => s.optionList.SetOptionTo(GS.GeoRampEnd),
-                                    CancelAction = _ => UIManager.instance.UIGoToDynamicMenu(modListMenu),
-                                    Description = new DescriptionInfo
+                                }, out var geoRamp);
+                                geoRamp.menuSetting.RefreshValueFromGameSettings();
+                                c.AddHorizontalOption("Ramp end",
+                                    new HorizontalOptionConfig
                                     {
-                                        Text = "The geo amount that ramping ends at.",
-                                    },
-                                    Label = "Ramp end",
-                                    Options = new string[]
-                                    {
-                                        "100",
-                                        "200",
-                                        "500",
-                                        "1000",
-                                        "2000",
-                                        "5000",
-                                        "10000"
-                                    },
-                                    Style = HorizontalOptionStyle.VanillaStyle
-                                }, out var rampEndGo)
-                            .AddHorizontalOption("Ramp max rate",
+                                        ApplySetting = (_, opt) => GS.GeoRampEnd = opt,
+                                        RefreshSetting = (s, _) => s.optionList.SetOptionTo(GS.GeoRampEnd),
+                                        CancelAction = _ => UIManager.instance.UIGoToDynamicMenu(modListMenu),
+                                        Description = new DescriptionInfo
+                                        {
+                                            Text = "The geo amount that ramping ends at.",
+                                        },
+                                        Label = "Ramp end",
+                                        Options = new string[]
+                                        {
+                                            "100",
+                                            "200",
+                                            "500",
+                                            "1000",
+                                            "2000",
+                                            "5000",
+                                            "10000"
+                                        },
+                                        Style = HorizontalOptionStyle.VanillaStyle
+                                    }, out var rampEndGo);
+                                rampEndGo.menuSetting.RefreshValueFromGameSettings();
+                            c.AddHorizontalOption("Ramp max rate",
                                 new HorizontalOptionConfig
                                 {
                                     ApplySetting = (_, opt) => GS.GeoMaxRate = opt,
@@ -191,6 +196,7 @@ namespace GeoHunger
                                     },
                                     Style = HorizontalOptionStyle.VanillaStyle
                                 }, out var rampMaxRateGo);
+                            rampMaxRateGo.menuSetting.RefreshValueFromGameSettings();
 
                         rampOptionsGo.Clear();
                         rampOptionsGo.Add(rampEndGo.gameObject);
