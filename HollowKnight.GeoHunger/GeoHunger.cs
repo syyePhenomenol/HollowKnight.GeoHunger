@@ -7,7 +7,6 @@ using UnityEngine;
 using HutongGames.PlayMaker;
 using Modding.Menu;
 using Modding.Menu.Config;
-using Mono.Security.X509;
 
 namespace GeoHunger
 {
@@ -29,13 +28,15 @@ namespace GeoHunger
 
         public GlobalSettings OnSaveGlobal() => GS;
 
+        internal static bool FSMsHooked = false;
+
         internal static Coroutine depleteGeo = null;
         internal static Coroutine starvePlayer = null;
         internal static bool depleteGeoRunning = false;
         internal static bool starvePlayerRunning = false;
         internal static bool controlOverride = false;
 
-        internal static List<GameObject> rampOptionsGo = new List<GameObject>();
+        internal static List<GameObject> rampOptionsGo = new();
 
         public MenuScreen GetMenuScreen(MenuScreen modListMenu, ModToggleDelegates? toggleDelegates)
         {
@@ -66,9 +67,9 @@ namespace GeoHunger
                             new HorizontalOptionConfig
                             {
                                 Label = "Toggle Mod",
-                                Options = new[] {"On", "Off"},
+                                Options = new[] { "On", "Off" },
                                 ApplySetting = (_, i) => { toggleDelegates.Value.SetModEnabled(i == 0); },
-                                RefreshSetting = (s, _) => s.optionList.SetOptionTo( toggleDelegates.Value.GetModEnabled() ? 0 : 1),
+                                RefreshSetting = (s, _) => s.optionList.SetOptionTo(toggleDelegates.Value.GetModEnabled() ? 0 : 1),
                                 CancelAction = _ => UIManager.instance.UIGoToDynamicMenu(modListMenu),
                                 Style = HorizontalOptionStyle.VanillaStyle
                             }, out var Toggle);
@@ -97,20 +98,20 @@ namespace GeoHunger
                                     },
                                     Style = HorizontalOptionStyle.VanillaStyle
                                 }, out var geoRate);
-                            geoRate.menuSetting.RefreshValueFromGameSettings();
-                            c.AddHorizontalOption("Starve rate",
-                                new HorizontalOptionConfig
+                        geoRate.menuSetting.RefreshValueFromGameSettings();
+                        c.AddHorizontalOption("Starve rate",
+                            new HorizontalOptionConfig
+                            {
+                                ApplySetting = (_, opt) => GS.StarveRate = opt,
+                                RefreshSetting = (s, _) => s.optionList.SetOptionTo(GS.StarveRate),
+                                CancelAction = _ => UIManager.instance.UIGoToDynamicMenu(modListMenu),
+                                Description = new DescriptionInfo
                                 {
-                                    ApplySetting = (_, opt) => GS.StarveRate = opt,
-                                    RefreshSetting = (s, _) => s.optionList.SetOptionTo(GS.StarveRate),
-                                    CancelAction = _ => UIManager.instance.UIGoToDynamicMenu(modListMenu),
-                                    Description = new DescriptionInfo
-                                    {
-                                        Text = "How quickly you lose health at 0 geo.",
-                                    },
-                                    Label = "Starve rate",
-                                    Options = new string[]
-                                    {
+                                    Text = "How quickly you lose health at 0 geo.",
+                                },
+                                Label = "Starve rate",
+                                Options = new string[]
+                                {
                                         "1 mask per 2 seconds",
                                         "1 mask per 3 seconds",
                                         "1 mask per 4 seconds",
@@ -120,49 +121,49 @@ namespace GeoHunger
                                         "1 mask per 8 seconds",
                                         "1 mask per 9 seconds",
                                         "1 mask per 10 seconds",
-                                    },
-                                    Style = HorizontalOptionStyle.VanillaStyle
-                                }, out var starveRate);
-                                starveRate.menuSetting.RefreshValueFromGameSettings();
-                            c.AddHorizontalOption("Geo ramp",
-                                new HorizontalOptionConfig
+                                },
+                                Style = HorizontalOptionStyle.VanillaStyle
+                            }, out var starveRate);
+                        starveRate.menuSetting.RefreshValueFromGameSettings();
+                        c.AddHorizontalOption("Geo ramp",
+                            new HorizontalOptionConfig
+                            {
+                                ApplySetting = (_, opt) =>
                                 {
-                                    ApplySetting = (_, opt) =>
-                                    { 
-                                        GS.GeoRampOn = opt;
-                                        foreach (GameObject optionGo in rampOptionsGo)
-                                        {
-                                            optionGo.SetActive(opt == 1);
-                                        }
-                                    },
-                                    RefreshSetting = (s, _) => s.optionList.SetOptionTo(GS.GeoRampOn),
-                                    CancelAction = _ => UIManager.instance.UIGoToDynamicMenu(modListMenu),
-                                    Description = new DescriptionInfo
+                                    GS.GeoRampOn = opt;
+                                    foreach (GameObject optionGo in rampOptionsGo)
                                     {
-                                        Text = "Lose geo faster if you have more geo.",
-                                    },
-                                    Label = "Geo ramp",
-                                    Options = new string[]
-                                    {
+                                        optionGo.SetActive(opt == 1);
+                                    }
+                                },
+                                RefreshSetting = (s, _) => s.optionList.SetOptionTo(GS.GeoRampOn),
+                                CancelAction = _ => UIManager.instance.UIGoToDynamicMenu(modListMenu),
+                                Description = new DescriptionInfo
+                                {
+                                    Text = "Lose geo faster if you have more geo.",
+                                },
+                                Label = "Geo ramp",
+                                Options = new string[]
+                                {
                                         "Off",
                                         "On"
-                                    },
-                                    Style = HorizontalOptionStyle.VanillaStyle
-                                }, out var geoRamp);
-                                geoRamp.menuSetting.RefreshValueFromGameSettings();
-                                c.AddHorizontalOption("Ramp end",
-                                    new HorizontalOptionConfig
-                                    {
-                                        ApplySetting = (_, opt) => GS.GeoRampEnd = opt,
-                                        RefreshSetting = (s, _) => s.optionList.SetOptionTo(GS.GeoRampEnd),
-                                        CancelAction = _ => UIManager.instance.UIGoToDynamicMenu(modListMenu),
-                                        Description = new DescriptionInfo
-                                        {
-                                            Text = "The geo amount that ramping ends at.",
-                                        },
-                                        Label = "Ramp end",
-                                        Options = new string[]
-                                        {
+                                },
+                                Style = HorizontalOptionStyle.VanillaStyle
+                            }, out var geoRamp);
+                        geoRamp.menuSetting.RefreshValueFromGameSettings();
+                        c.AddHorizontalOption("Ramp end",
+                            new HorizontalOptionConfig
+                            {
+                                ApplySetting = (_, opt) => GS.GeoRampEnd = opt,
+                                RefreshSetting = (s, _) => s.optionList.SetOptionTo(GS.GeoRampEnd),
+                                CancelAction = _ => UIManager.instance.UIGoToDynamicMenu(modListMenu),
+                                Description = new DescriptionInfo
+                                {
+                                    Text = "The geo amount that ramping ends at.",
+                                },
+                                Label = "Ramp end",
+                                Options = new string[]
+                                {
                                             "100",
                                             "200",
                                             "500",
@@ -170,33 +171,33 @@ namespace GeoHunger
                                             "2000",
                                             "5000",
                                             "10000"
-                                        },
-                                        Style = HorizontalOptionStyle.VanillaStyle
-                                    }, out var rampEndGo);
-                                rampEndGo.menuSetting.RefreshValueFromGameSettings();
-                            c.AddHorizontalOption("Ramp max rate",
-                                new HorizontalOptionConfig
+                                },
+                                Style = HorizontalOptionStyle.VanillaStyle
+                            }, out var rampEndGo);
+                        rampEndGo.menuSetting.RefreshValueFromGameSettings();
+                        c.AddHorizontalOption("Ramp max rate",
+                            new HorizontalOptionConfig
+                            {
+                                ApplySetting = (_, opt) => GS.GeoMaxRate = opt,
+                                RefreshSetting = (s, _) => s.optionList.SetOptionTo(GS.GeoMaxRate),
+                                CancelAction = _ => UIManager.instance.UIGoToDynamicMenu(modListMenu),
+                                Description = new DescriptionInfo
                                 {
-                                    ApplySetting = (_, opt) => GS.GeoMaxRate = opt,
-                                    RefreshSetting = (s, _) => s.optionList.SetOptionTo(GS.GeoMaxRate),
-                                    CancelAction = _ => UIManager.instance.UIGoToDynamicMenu(modListMenu),
-                                    Description = new DescriptionInfo
-                                    {
-                                        Text = "The maximum depletion rate of geo (at ramp end).",
+                                    Text = "The maximum depletion rate of geo (at ramp end).",
 
-                                    },
-                                    Label = "Ramp max rate",
-                                    Options = new string[]
-                                    {
+                                },
+                                Label = "Ramp max rate",
+                                Options = new string[]
+                                {
                                         "5 geo per second",
                                         "10 geo per second",
                                         "20 geo per second",
                                         "50 geo per second",
                                         "100 geo per second"
-                                    },
-                                    Style = HorizontalOptionStyle.VanillaStyle
-                                }, out var rampMaxRateGo);
-                            rampMaxRateGo.menuSetting.RefreshValueFromGameSettings();
+                                },
+                                Style = HorizontalOptionStyle.VanillaStyle
+                            }, out var rampMaxRateGo);
+                        rampMaxRateGo.menuSetting.RefreshValueFromGameSettings();
 
                         rampOptionsGo.Clear();
                         rampOptionsGo.Add(rampEndGo.gameObject);
@@ -242,8 +243,15 @@ namespace GeoHunger
             On.GameManager.LoadGame += GameManager_LoadGame;
             On.QuitToMenu.Start += OnQuitToMenu;
 
-            // We override controlReqlinquished for knight actions/casts
-            On.PlayMakerFSM.OnEnable += PlayMakerFSM_OnEnable;
+            // We override controlReqlinquished for knight actions/casts.
+            if (GameManager.instance.IsGamePaused())
+            {
+                HookFSMsMidGame();
+            }
+            else
+            {
+                On.PlayMakerFSM.OnEnable += PlayMakerFSM_OnEnable;
+            }
 
             Log("Initialized");
         }
@@ -284,6 +292,29 @@ namespace GeoHunger
             return orig(self);
         }
 
+        // Ignore "controlReqlinquished" when the player swims/superdashes/casts spell/opens map etc.
+        public void HookFSMsMidGame()
+        {
+            GameObject knightGO = GameObject.Find("Knight");
+
+            List<PlayMakerFSM> FSMList = new()
+            {
+                knightGO.LocateMyFSM("Surface Water"),
+                knightGO.LocateMyFSM("Superdash"),
+                knightGO.LocateMyFSM("Dream Nail"),
+                knightGO.LocateMyFSM("Nail Arts"),
+                knightGO.LocateMyFSM("Map Control"),
+                knightGO.LocateMyFSM("Spell Control"),
+            };
+
+            foreach (PlayMakerFSM fsm in FSMList)
+            {
+                AddControlOverrides(fsm);
+            }
+
+            FSMsHooked = true;
+        }
+
         public void PlayMakerFSM_OnEnable(On.PlayMakerFSM.orig_OnEnable orig, PlayMakerFSM self)
         {
             orig(self);
@@ -296,22 +327,33 @@ namespace GeoHunger
                     || self.FsmName == "Map Control"
                     || self.FsmName == "Spell Control"))
             {
-                foreach (FsmState state in self.FsmStates)
+                AddControlOverrides(self);
+                FSMsHooked = true;
+            }
+        }
+
+        public void AddControlOverrides(PlayMakerFSM fsm)
+        {
+            foreach (FsmState state in fsm.FsmStates)
+            {
+                if (state.Name == "Take Control"
+                    || state.Name == "Relinquish Control"
+                    || state.Name == "Open Map"
+                    || state.Name == "Focus Start"
+                    || state.Name == "Scream Antic1"
+                    || state.Name == "Scream Antic2"
+                    || state.Name == "Quake Antic"
+                    || state.Name == "Fireball Antic")
                 {
-                    if (state.Name == "Take Control"
-                        || state.Name == "Relinquish Control"
-                        || state.Name == "Open Map"
-                        || state.Name == "Focus Start"
-                        || state.Name == "Scream Antic1"
-                        || state.Name == "Scream Antic2"
-                        || state.Name == "Quake Antic"
-                        || state.Name == "Fireball Antic"
-                        || state.Name == "Quake Antic")
+                    if (state.Actions.Last().Name != "Control Override")
                     {
                         state.Actions = state.Actions.Append(new SetControlOverride(true)).ToArray();
                     }
-                    else if (state.Name == "Regain Control"
-                        || state.Name == "Spell End")
+                }
+                else if (state.Name == "Regain Control"
+                    || state.Name == "Spell End")
+                {
+                    if (state.Actions.Last().Name != "Control Override")
                     {
                         state.Actions = state.Actions.Append(new SetControlOverride(false)).ToArray();
                     }
@@ -326,6 +368,7 @@ namespace GeoHunger
             public SetControlOverride(bool value)
             {
                 _value = value;
+                Name = "Control Override";
             }
 
             public override void OnEnter()
