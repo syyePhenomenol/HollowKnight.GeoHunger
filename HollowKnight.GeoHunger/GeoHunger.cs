@@ -1,14 +1,17 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Modding;
 using UnityEngine;
 using HutongGames.PlayMaker;
+using Modding.Menu;
+using Modding.Menu.Config;
+using Mono.Security.X509;
 
 namespace GeoHunger
 {
-    public class GeoHunger : Mod, IGlobalSettings<GlobalSettings>, IMenuMod, ITogglableMod
+    public class GeoHunger : Mod, IGlobalSettings<GlobalSettings>, ICustomMenuMod, ITogglableMod
     {
         internal static GeoHunger Instance;
 
@@ -20,7 +23,7 @@ namespace GeoHunger
 
         public static GlobalSettings GS { get; set; } = new GlobalSettings();
 
-        public bool ToggleButtonInsideMenu => false;
+        public bool ToggleButtonInsideMenu => true;
 
         public void OnLoadGlobal(GlobalSettings s) => GS = s;
 
@@ -32,106 +35,186 @@ namespace GeoHunger
         internal static bool starvePlayerRunning = false;
         internal static bool controlOverride = false;
 
-        public List<IMenuMod.MenuEntry> GetMenuData(IMenuMod.MenuEntry? toggleButtonEntry)
+        internal static List<GameObject> rampOptionsGo = new List<GameObject>();
+
+        public MenuScreen GetMenuScreen(MenuScreen modListMenu, ModToggleDelegates? toggleDelegates)
         {
-            return new List<IMenuMod.MenuEntry>
-            {
-                new IMenuMod.MenuEntry
-                {
-                    Name = "Geo rate",
-                    Description = "How quickly you lose geo.",
-
-                    Values = new string[]
+            return new MenuBuilder(UIManager.instance.UICanvas.gameObject, "GeoHunger")
+                .CreateTitle("GeoHunger", MenuTitleStyle.vanillaStyle)
+                .CreateContentPane(RectTransformData.FromSizeAndPos(
+                    new RelVector2(new Vector2(1920f, 903f)),
+                    new AnchoredPosition(
+                        new Vector2(0.5f, 0.5f),
+                        new Vector2(0.5f, 0.5f),
+                        new Vector2(0f, -60f)
+                    )
+                ))
+                .CreateControlPane(RectTransformData.FromSizeAndPos(
+                    new RelVector2(new Vector2(1920f, 259f)),
+                    new AnchoredPosition(
+                        new Vector2(0.5f, 0.5f),
+                        new Vector2(0.5f, 0.5f),
+                        new Vector2(0f, -502f)
+                    )
+                ))
+                .SetDefaultNavGraph(new ChainedNavGraph()).AddContent(
+                    RegularGridLayout.CreateVerticalLayout(105f),
+                    c =>
                     {
-                        "0.2 geo per second",
-                        "0.3 geo per second",
-                        "0.4 geo per second",
-                        "0.6 geo per second",
-                        "0.8 geo per second",
-                        "1.0 geo per second",
-                        "1.5 geo per second",
-                        "2.0 geo per second",
-                    },
+                        c.AddHorizontalOption(
+                            "Toggle Mod",
+                            new HorizontalOptionConfig
+                            {
+                                Label = "Toggle Mod",
+                                Options = new[] {"On", "Off"},
+                                ApplySetting = (_, i) => { toggleDelegates.Value.SetModEnabled(i == 0); },
+                                RefreshSetting = (s, _) => s.optionList.SetOptionTo( toggleDelegates.Value.GetModEnabled() ? 0 : 1),
+                                CancelAction = _ => UIManager.instance.UIGoToDynamicMenu(modListMenu),
+                                Style = HorizontalOptionStyle.VanillaStyle
+                            });
+                        c.AddHorizontalOption("Geo rate",
+                                new HorizontalOptionConfig
+                                {
+                                    ApplySetting = (_, opt) => GS.GeoMinRate = opt,
+                                    RefreshSetting = (s, _) => s.optionList.SetOptionTo(GS.GeoMinRate),
+                                    CancelAction = _ => UIManager.instance.UIGoToDynamicMenu(modListMenu),
+                                    Description = new DescriptionInfo
+                                    {
+                                        Text = "How quickly you lose geo.",
+                                    },
+                                    Label = "Geo rate",
+                                    Options = new string[]
+                                    {
+                                        "0.2 geo per second",
+                                        "0.3 geo per second",
+                                        "0.4 geo per second",
+                                        "0.6 geo per second",
+                                        "0.8 geo per second",
+                                        "1.0 geo per second",
+                                        "1.5 geo per second",
+                                        "2.0 geo per second",
+                                    },
+                                    Style = HorizontalOptionStyle.VanillaStyle
+                                })
+                            .AddHorizontalOption("Starve rate",
+                                new HorizontalOptionConfig
+                                {
+                                    ApplySetting = (_, opt) => GS.StarveRate = opt,
+                                    RefreshSetting = (s, _) => s.optionList.SetOptionTo(GS.StarveRate),
+                                    CancelAction = _ => UIManager.instance.UIGoToDynamicMenu(modListMenu),
+                                    Description = new DescriptionInfo
+                                    {
+                                        Text = "How quickly you lose health at 0 geo.",
+                                    },
+                                    Label = "Starve rate",
+                                    Options = new string[]
+                                    {
+                                        "1 mask per 2 seconds",
+                                        "1 mask per 3 seconds",
+                                        "1 mask per 4 seconds",
+                                        "1 mask per 5 seconds",
+                                        "1 mask per 6 seconds",
+                                        "1 mask per 7 seconds",
+                                        "1 mask per 8 seconds",
+                                        "1 mask per 9 seconds",
+                                        "1 mask per 10 seconds",
+                                    },
+                                    Style = HorizontalOptionStyle.VanillaStyle
+                                })
+                            .AddHorizontalOption("Geo ramp",
+                                new HorizontalOptionConfig
+                                {
+                                    ApplySetting = (_, opt) =>
+                                    { 
+                                        GS.GeoRampOn = opt;
+                                        foreach (GameObject optionGo in rampOptionsGo)
+                                        {
+                                            optionGo.SetActive(opt == 1);
+                                        }
+                                    },
+                                    RefreshSetting = (s, _) => s.optionList.SetOptionTo(GS.GeoRampOn),
+                                    CancelAction = _ => UIManager.instance.UIGoToDynamicMenu(modListMenu),
+                                    Description = new DescriptionInfo
+                                    {
+                                        Text = "Lose geo faster if you have more geo.",
+                                    },
+                                    Label = "Geo ramp",
+                                    Options = new string[]
+                                    {
+                                        "Off",
+                                        "On"
+                                    },
+                                    Style = HorizontalOptionStyle.VanillaStyle
+                                })
+                            .AddHorizontalOption("Ramp end",
+                                new HorizontalOptionConfig
+                                {
+                                    ApplySetting = (_, opt) => GS.GeoRampEnd = opt,
+                                    RefreshSetting = (s, _) => s.optionList.SetOptionTo(GS.GeoRampEnd),
+                                    CancelAction = _ => UIManager.instance.UIGoToDynamicMenu(modListMenu),
+                                    Description = new DescriptionInfo
+                                    {
+                                        Text = "The geo amount that ramping ends at.",
+                                    },
+                                    Label = "Ramp end",
+                                    Options = new string[]
+                                    {
+                                        "100",
+                                        "200",
+                                        "500",
+                                        "1000",
+                                        "2000",
+                                        "5000",
+                                        "10000"
+                                    },
+                                    Style = HorizontalOptionStyle.VanillaStyle
+                                }, out var rampEndGo)
+                            .AddHorizontalOption("Ramp max rate",
+                                new HorizontalOptionConfig
+                                {
+                                    ApplySetting = (_, opt) => GS.GeoMaxRate = opt,
+                                    RefreshSetting = (s, _) => s.optionList.SetOptionTo(GS.GeoMaxRate),
+                                    CancelAction = _ => UIManager.instance.UIGoToDynamicMenu(modListMenu),
+                                    Description = new DescriptionInfo
+                                    {
+                                        Text = "The maximum depletion rate of geo (at ramp end).",
 
-                    Saver = opt => GS.GeoMinRate = opt,
-                    Loader = () => GS.GeoMinRate
-                },
+                                    },
+                                    Label = "Ramp max rate",
+                                    Options = new string[]
+                                    {
+                                        "5 geo per second",
+                                        "10 geo per second",
+                                        "20 geo per second",
+                                        "50 geo per second",
+                                        "100 geo per second"
+                                    },
+                                    Style = HorizontalOptionStyle.VanillaStyle
+                                }, out var rampMaxRateGo);
 
-                new IMenuMod.MenuEntry
-                {
-                    Name = "Starve rate",
-                    Description = "How quickly you lose health at 0 geo.",
+                        rampOptionsGo.Clear();
+                        rampOptionsGo.Add(rampEndGo.gameObject);
+                        rampOptionsGo.Add(rampMaxRateGo.gameObject);
+                        foreach (GameObject optionGo in rampOptionsGo)
+                        {
+                            optionGo.SetActive(GS.GeoRampOn == 1);
+                        }
 
-                    Values = new string[]
-                    {
-                        "1 mask per 2 seconds",
-                        "1 mask per 3 seconds",
-                        "1 mask per 4 seconds",
-                        "1 mask per 5 seconds",
-                        "1 mask per 6 seconds",
-                        "1 mask per 7 seconds",
-                        "1 mask per 8 seconds",
-                        "1 mask per 9 seconds",
-                        "1 mask per 10 seconds",
-                    },
-
-                    Saver = opt => GS.StarveRate = opt,
-                    Loader = () => GS.StarveRate
-                },
-
-                new IMenuMod.MenuEntry
-                {
-                    Name = "Geo ramp",
-                    Description = "Lose geo faster if you have more geo.",
-
-                    Values = new string[]
-                    {
-                        "Off",
-                        "On"
-                    },
-
-                    Saver = opt => GS.GeoRampOn = opt,
-                    Loader = () => GS.GeoRampOn
-                },
-
-                new IMenuMod.MenuEntry
-                {
-                    Name = "Ramp end",
-                    Description = "The geo amount that ramping ends at.",
-
-                    Values = new string[]
-                    {
-                        "100",
-                        "200",
-                        "500",
-                        "1000",
-                        "2000",
-                        "5000",
-                        "10000"
-                    },
-
-                    Saver = opt => GS.GeoRampEnd = opt,
-                    Loader = () => GS.GeoRampEnd
-                },
-
-                new IMenuMod.MenuEntry
-                {
-                    Name = "Ramp max rate",
-                    Description = "The maximum depletion rate of geo (at ramp end).",
-
-                    Values = new string[]
-                    {
-                        "5 geo per second",
-                        "10 geo per second",
-                        "20 geo per second",
-                        "50 geo per second",
-                        "100 geo per second"
-                    },
-
-                    Saver = opt => GS.GeoMaxRate = opt,
-                    Loader = () => GS.GeoMaxRate
-                }
-            };
+                    }).AddControls(
+                    new SingleContentLayout(new AnchoredPosition(
+                        new Vector2(0.5f, 0.5f),
+                        new Vector2(0.5f, 0.5f),
+                        new Vector2(0f, -64f)
+                    )), c => c.AddMenuButton(
+                        "BackButton",
+                        new MenuButtonConfig
+                        {
+                            Label = "Back",
+                            CancelAction = _ => UIManager.instance.UIGoToDynamicMenu(modListMenu),
+                            SubmitAction = _ => UIManager.instance.UIGoToDynamicMenu(modListMenu),
+                            Style = MenuButtonStyle.VanillaStyle,
+                            Proceed = true
+                        })).Build();
         }
 
         public override void Initialize(Dictionary<string, Dictionary<string, GameObject>> preloadedObjects)
