@@ -28,8 +28,6 @@ namespace GeoHunger
 
         public GlobalSettings OnSaveGlobal() => GS;
 
-        internal static bool FSMsHooked = false;
-
         internal static Coroutine depleteGeo = null;
         internal static Coroutine starvePlayer = null;
         internal static bool depleteGeoRunning = false;
@@ -311,8 +309,6 @@ namespace GeoHunger
             {
                 AddControlOverrides(fsm);
             }
-
-            FSMsHooked = true;
         }
 
         public void PlayMakerFSM_OnEnable(On.PlayMakerFSM.orig_OnEnable orig, PlayMakerFSM self)
@@ -328,7 +324,6 @@ namespace GeoHunger
                     || self.FsmName == "Spell Control"))
             {
                 AddControlOverrides(self);
-                FSMsHooked = true;
             }
         }
 
